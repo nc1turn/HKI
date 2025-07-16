@@ -21,9 +21,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   
   function loadUserData(page) {
-    fetch(`../backend/get_permohonan_user.php?page=${page}`)
+    fetch(`../Backend/get_permohonan.php?page=${page}`)
       .then((res) => res.json())
-      .then((data) => {
+      .then((res) => {
+        let data = res.data;
         let table = document.getElementById("permohonanUserTable");
         table.innerHTML = "";
   
@@ -35,19 +36,22 @@ document.addEventListener("DOMContentLoaded", () => {
               <td><a href="../uploads/${row.file_ktp}" target="_blank">Lihat</a></td>
               <td><a href="../uploads/${row.file_sp}" target="_blank">Lihat</a></td>
               <td><a href="../uploads/${row.file_sph}" target="_blank">Lihat</a></td>
-              <td><a href="../uploads/${row.file_bukti_bayar}" target="_blank">Lihat</a></td>
+              <td><a href="../uploads/${row.file_bukti_pembayaran}" target="_blank">Lihat</a></td>
               <td>
-                <a href="edit_permohonan.php?id=${row.id}" class="btn btn-warning btn-sm">Edit</a>
-                <button class="btn btn-danger btn-sm btn-hapus" data-id="${row.id}">Hapus</button>
+                <a href="edit_permohonan.php?id=${row.detail_id}" class="btn btn-warning btn-sm">Edit</a>
+                <button class="btn btn-danger btn-sm btn-hapus" data-id="${row.detail_id}">Hapus</button>
               </td>
             </tr>
           `;
         });
   
-        document.getElementById("paginationUser").innerHTML = `
-          <a href="#" onclick="loadUserData(${page - 1})" class="px-3 py-1 bg-gray-300 rounded">Sebelumnya</a>
-          <a href="#" onclick="loadUserData(${page + 1})" class="px-3 py-1 bg-gray-300 rounded">Berikutnya</a>
-        `;
+        // Pagination (optional, bisa diimprove)
+        if (document.getElementById("paginationUser")) {
+          document.getElementById("paginationUser").innerHTML = `
+            <a href="#" onclick="loadUserData(${page - 1})" class="px-3 py-1 bg-gray-300 rounded">Sebelumnya</a>
+            <a href="#" onclick="loadUserData(${page + 1})" class="px-3 py-1 bg-gray-300 rounded">Berikutnya</a>
+          `;
+        }
       });
   }
   

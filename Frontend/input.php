@@ -4,27 +4,21 @@ $dataid = $_GET['dataid'] ?? uniqid(prefix:'data_', more_entropy:true);
 
 include '../koneksi.php';
 
-// Ambil data pengusul dari session jika ada, jika tidak dari database
-if (isset($_SESSION['data_pengusul']) && !empty($_SESSION['data_pengusul'])) {
-    $data_pengusul = $_SESSION['data_pengusul'];
-} else {
-    $data_pengusul = [];
+// Ambil data pengusul LANGSUNG dari database setiap kali halaman diakses
+$data_pengusul = [];
 
-    // Ambil data dosen
-    $dosen_result = $conn->query("SELECT * FROM data_pribadi_dosen WHERE dataid = '$dataid'");
-    while ($row = $dosen_result->fetch_assoc()) {
-        $row['role'] = 'Dosen';
-        $data_pengusul[] = $row;
-    }
+// Ambil data dosen
+$dosen_result = $conn->query("SELECT * FROM data_pribadi_dosen WHERE dataid = '$dataid'");
+while ($row = $dosen_result->fetch_assoc()) {
+    $row['role'] = 'Dosen';
+    $data_pengusul[] = $row;
+}
 
-    // Ambil data mahasiswa
-    $mhs_result = $conn->query("SELECT * FROM data_pribadi_mahasiswa WHERE dataid = '$dataid'");
-    while ($row = $mhs_result->fetch_assoc()) {
-        $row['role'] = 'Mahasiswa';
-        $data_pengusul[] = $row;
-    }
-
-    $_SESSION['data_pengusul'] = $data_pengusul;
+// Ambil data mahasiswa
+$mhs_result = $conn->query("SELECT * FROM data_pribadi_mahasiswa WHERE dataid = '$dataid'");
+while ($row = $mhs_result->fetch_assoc()) {
+    $row['role'] = 'Mahasiswa';
+    $data_pengusul[] = $row;
 }
 ?>
 
