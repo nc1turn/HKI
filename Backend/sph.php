@@ -16,18 +16,10 @@ $sql = "SELECT * FROM detail_permohonan ORDER BY id DESC LIMIT 1";
 $result = $conn->query($sql);
 $data = $result->fetch_assoc();
 
-// Ambil data dari database
-// $sql_dosen = "SELECT id, Nama, Alamat, 'Dosen' as role FROM data_pribadi_dosen";
-// $result_dosen = $conn->query($sql_dosen);
+// Ambil data pengusul berdasarkan dataid permohonan terakhir
+$dataid = isset($data['dataid']) ? $data['dataid'] : '';
 
-// $sql_mahasiswa = "SELECT id, Nama, Alamat, 'Mahasiswa' as role FROM data_pribadi_mahasiswa";
-// $result_mahasiswa = $conn->query($sql_mahasiswa);
-
-$query = "SELECT nama, alamat, 'Dosen' AS role FROM data_pribadi_dosen WHERE (id,dataid) IN (
-  SELECT id, MAX(dataid) FROM data_pribadi_dosen GROUP BY id)
-UNION ALL
-SELECT nama, alamat,'Mahasiswa' AS role FROM data_pribadi_mahasiswa WHERE (id,dataid) IN (
-  SELECT id ,MAX(dataid) FROM data_pribadi_mahasiswa GROUP BY id)";
+$query = "SELECT Nama as nama, Alamat as alamat, 'Dosen' AS role FROM data_pribadi_dosen WHERE dataid = '" . $conn->real_escape_string($dataid) . "' UNION ALL SELECT Nama as nama, Alamat as alamat, 'Mahasiswa' AS role FROM data_pribadi_mahasiswa WHERE dataid = '" . $conn->real_escape_string($dataid) . "'";
 
 $result = $conn->query($query);
 

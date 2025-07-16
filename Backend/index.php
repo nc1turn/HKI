@@ -172,10 +172,10 @@ $pdf->Ln(2);
 
 $pdf->SetFont('Times', '', 11);
 $pdf->SetFillColor(204, 255, 204);
-$pdf->Cell(85, 10, "Pendanaan Eksternal UPN \"Veteran\" \nYogyakarta", 1, 0, 'C', true);
+$pdf->Cell(85, 10, "Pendanaan (" . $jenis_pendanaan . ") UPN \"Veteran\" \nYogyakarta", 1, 0, 'C', true);
 
-$pdf->SetFillColor(255, 255, 255);
-$pdf->Cell(85, 10, $jenis_pendanaan, 1, 0, 'C');
+// $pdf->SetFillColor(255, 255, 255);
+// $pdf->Cell(85, 10, $jenis_pendanaan, 1, 0, 'C');
 
 $pdf->Ln(10);
 $pdf->Cell(20, 10, 'Dengan angka pendanaan sejumlah: Rp. 200.000,-', 0, 1, 'L');
