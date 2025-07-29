@@ -40,6 +40,7 @@ $_SESSION['input_awal'] = [
 ];
 
 // Redirect ke halaman input.php
+unset($_SESSION['data_pengusul']);
 header('Location: ../Frontend/input.php');
 exit();
 ?>

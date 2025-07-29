@@ -1,6 +1,8 @@
 <?php
 ob_start();
 session_start();
+// Bersihkan data pengusul setiap login
+unset($_SESSION['data_pengusul']);
 include 'koneksi.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
