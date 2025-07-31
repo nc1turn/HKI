@@ -1,6 +1,12 @@
 <?php
 session_start(); // Pastikan session dimulai
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../Frontend/login.php?m=nfound');
+    exit();
+}
+
 $judul = $_POST['judul'] ?? '';
 $jenis_permohonan = $_POST['jenis_permohonan'] ?? '';
 $jenis_ciptaan = $_POST['jenis_ciptaan'] ?? '';

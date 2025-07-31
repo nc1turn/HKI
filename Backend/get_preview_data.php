@@ -1,4 +1,13 @@
 <?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Akses tidak diizinkan. Silakan login terlebih dahulu.']);
+    exit();
+}
+
 $servername = "localhost";
 $username = "root";
 $password = "";

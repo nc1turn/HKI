@@ -14,16 +14,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    $stmt = $conn->prepare("SELECT id, password, role FROM users WHERE username = ?");
+    $stmt = $conn->prepare("SELECT id, password, role, dataid FROM users WHERE username = ?");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $res = $stmt->get_result();
 
     if ($row = $res->fetch_assoc()) {
-        if (password_verify($password, $row['password'])) {
+        // Check if password is hashed or plain text (for backward compatibility)
+        if (password_verify($password, $row['password']) || $password === $row['password']) {
             $_SESSION['user_id'] = $row['id'];
             $_SESSION['username'] = $username;
             $_SESSION['role'] = $row['role'];
+            $_SESSION['user_dataid'] = $row['dataid'];
             if ($row['role'] === 'admin') {
                 header('Location: ../frontend/review_ad.php');
             } else {

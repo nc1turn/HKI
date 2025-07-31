@@ -1,5 +1,12 @@
 <?php
 session_start();
+
+// Check if user is logged in and is admin
+if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Akses tidak diizinkan. Hanya admin yang dapat mengakses halaman ini.']);
+    exit();
+}
 include 'koneksi.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

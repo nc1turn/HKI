@@ -1,6 +1,12 @@
 <?php
 session_start();
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../Frontend/login.php?m=nfound');
+    exit();
+}
+
 $servername = "localhost";
 $username = "root";
 $password = "";
@@ -22,29 +28,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fakultas = $_POST['fakultas'] ?? '';
 
     if (empty($dataid) || empty($role) || empty($nama) || empty($alamat) || empty($kode_pos) || empty($nomor_telepon) || empty($email) || empty($fakultas)) {
-        header('Location: ../Frontend/input.php?error=Data tidak lengkap');
+        header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid) . '&error=Data tidak lengkap');
         exit();
     }
 
+    $user_id = $_SESSION['user_id'];
+    
     if ($role === 'Dosen') {
-        $sql = "INSERT INTO data_pribadi_dosen (dataid, Nama, Alamat, Kode_Pos, Nomor_Telepon, Email, Fakultas) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO data_pribadi_dosen (dataid, nama, alamat, kode_pos, nomor_telepon, email, fakultas, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     } else {
-        $sql = "INSERT INTO data_pribadi_mahasiswa (dataid, Nama, Alamat, Kode_Pos, Nomor_Telepon, Email, Fakultas) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO data_pribadi_mahasiswa (dataid, nama, alamat, kode_pos, nomor_telepon, email, fakultas, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
     }
 
     $stmt = $conn->prepare($sql);
     if ($stmt) {
-        $stmt->bind_param("sssssss", $dataid, $nama, $alamat, $kode_pos, $nomor_telepon, $email, $fakultas);
+        $stmt->bind_param("sssssssi", $dataid, $nama, $alamat, $kode_pos, $nomor_telepon, $email, $fakultas, $user_id);
 
         if ($stmt->execute()) {
-            header('Location: ../Frontend/input.php?success=Data berhasil ditambahkan');
+            header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid) . '&success=Data berhasil ditambahkan');
         } else {
-            header('Location: ../Frontend/input.php?error=Gagal menyimpan data');
+            header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid) . '&error=Gagal menyimpan data');
         }
 
         $stmt->close();
     } else {
-        header('Location: ../Frontend/input.php?error=Gagal menyiapkan statement');
+        header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid) . '&error=Gagal menyiapkan statement');
     }
 }
 

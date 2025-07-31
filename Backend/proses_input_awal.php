@@ -28,6 +28,9 @@ if (empty($judul) || empty($jenis_permohonan) || empty($jenis_ciptaan)) {
     exit();
 }
 
+// Generate dataid untuk sesi ini
+$dataid = uniqid(prefix:'data_', more_entropy:true);
+
 // Simpan data ke session
 $_SESSION['input_awal'] = [
     'judul' => $judul,
@@ -39,8 +42,17 @@ $_SESSION['input_awal'] = [
     'jenis_pendanaan' => $jenis_pendanaan,
 ];
 
-// Redirect ke halaman input.php
+// Update user's dataid in database
+$user_id = $_SESSION['user_id'];
+include 'koneksi.php';
+$update_sql = "UPDATE users SET dataid = ? WHERE id = ?";
+$update_stmt = $conn->prepare($update_sql);
+$update_stmt->bind_param("si", $dataid, $user_id);
+$update_stmt->execute();
+$update_stmt->close();
+
+// Redirect ke halaman input.php dengan dataid
 unset($_SESSION['data_pengusul']);
-header('Location: ../Frontend/input.php');
+header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid));
 exit();
 ?>
