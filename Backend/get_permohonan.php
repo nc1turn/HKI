@@ -21,6 +21,17 @@ $sql = "
 SELECT 
   dp.id as detail_id,
   dp.judul,
+  dp.jenis_permohonan,
+  dp.jenis_ciptaan,
+  dp.sub_jenis_ciptaan,
+  dp.uraian_singkat,
+  dp.tanggal_pertama_kali_diumumkan,
+  dp.negara_pertama_kali_diumumkan,
+  dp.kota_pertama_kali_diumumkan,
+  dp.jenis_pendanaan,
+  dp.jenis_hibah,
+  dp.created_at,
+  dp.dataid,
   u.file_contoh_karya,
   u.file_ktp,
   u.file_sp,
@@ -30,7 +41,7 @@ SELECT
   ra.status,
   ra.sertifikat
 FROM detail_permohonan dp
-LEFT JOIN uploads u ON dp.id = u.dataid
+LEFT JOIN uploads u ON dp.dataid = u.dataid
 LEFT JOIN review_ad ra ON dp.id = ra.detailpermohonan_id
 WHERE dp.judul LIKE ?
 ORDER BY dp.id ASC
