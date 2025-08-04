@@ -1,58 +1,96 @@
 <?php
-session_start(); // Pastikan session dimulai
+session_start();
 
-// Ambil data dari form
-$judul = $_POST['judul'] ?? '';
-$jenis_permohonan = $_POST['jenis_permohonan'] ?? '';
-$jenis_ciptaan = $_POST['jenis_ciptaan'] ?? '';
-$uraian_singkat = $_POST['uraian_singkat'] ?? '';
-$tanggal_pertama_kali_diumumkan = $_POST['tanggal_pertama_kali_diumumkan'] ?? '';
-$kota_pertama_kali_diumumkan = $_POST['kota_pertama_kali_diumumkan'] ?? '';
-$jenis_pendanaan = $_POST['jenis_hibah'] ?? '';
-
-// Validasi input
-if (empty($judul) || empty($jenis_permohonan) || empty($jenis_ciptaan)) {
-    // Simpan data ke session untuk ditampilkan kembali
-    $_SESSION['input_awal'] = [
-        'judul' => $judul,
-        'jenis_permohonan' => $jenis_permohonan,
-        'jenis_ciptaan' => $jenis_ciptaan,
-        'uraian_singkat' => $uraian_singkat,
-        'tanggal_pertama_kali_diumumkan' => $tanggal_pertama_kali_diumumkan,
-        'kota_pertama_kali_diumumkan' => $kota_pertama_kali_diumumkan,
-        'jenis_pendanaan' => $jenis_pendanaan,
-    ];
-    
-    // Redirect kembali ke input_awal.php dengan pesan error
-    header('Location: ../Frontend/input_awal.php?error=Data tidak lengkap. Harap isi semua kolom yang wajib.');
+// Validasi user login
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ../Frontend/login.php?m=nfound');
     exit();
 }
 
-// Generate dataid untuk sesi ini
-$dataid = uniqid(prefix:'data_', more_entropy:true);
+// Validasi data session
+if (!isset($_SESSION['input_awal'])) {
+    header('Location: ../Frontend/input_awal.php?error=Session data tidak ditemukan');
+    exit();
+}
 
-// Simpan data ke session
-$_SESSION['input_awal'] = [
-    'judul' => $judul,
-    'jenis_permohonan' => $jenis_permohonan,
-    'jenis_ciptaan' => $jenis_ciptaan,
-    'uraian_singkat' => $uraian_singkat,
-    'tanggal_pertama_kali_diumumkan' => $tanggal_pertama_kali_diumumkan,
-    'kota_pertama_kali_diumumkan' => $kota_pertama_kali_diumumkan,
-    'jenis_pendanaan' => $jenis_pendanaan,
-];
+// Generate dataid if not exists in session
+if (!isset($_SESSION['dataid'])) {
+    $_SESSION['dataid'] = time() . rand(100, 999);
+}
 
-// Update user's dataid in database
-$user_id = $_SESSION['user_id'];
+// Koneksi database
 include 'koneksi.php';
-$update_sql = "UPDATE users SET dataid = ? WHERE id = ?";
-$update_stmt = $conn->prepare($update_sql);
-$update_stmt->bind_param("si", $dataid, $user_id);
-$update_stmt->execute();
-$update_stmt->close();
+if (!$conn) {
+    die("Koneksi database gagal: " . mysqli_connect_error());
+}
 
-// Redirect ke halaman input.php dengan dataid
-unset($_SESSION['data_pengusul']);
-header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid));
-exit();
+// Ambil data dari session
+$input_awal = $_SESSION['input_awal'];
+
+try {
+    // Mulai transaksi
+    $conn->begin_transaction();
+
+    // 1. Simpan data ke tabel detail_permohonan (INSERT)
+    $sql = "INSERT INTO detail_permohonan (
+                jenis_permohonan, jenis_ciptaan, judul, 
+                uraian_singkat, tanggal_pertama_kali_diumumkan, 
+                kota_pertama_kali_diumumkan, jenis_pendanaan, 
+                jenis_hibah, dataid, user_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sssssssssi",
+        $input_awal['jenis_permohonan'],
+        $input_awal['jenis_ciptaan'],
+        $input_awal['judul'],
+        $input_awal['uraian_singkat'],
+        $input_awal['tanggal_pertama_kali_diumumkan'],
+        $input_awal['kota_pertama_kali_diumumkan'],
+        $input_awal['jenis_pendanaan'],
+        $input_awal['nama_pendanaan'],
+        $_SESSION['dataid'],
+        $_SESSION['user_id']
+    );
+
+    // Eksekusi query
+    if (!$stmt->execute()) {
+        throw new Exception("Gagal menyimpan data permohonan: " . $stmt->error);
+    }
+
+    // 2. Update tabel users (jika diperlukan)
+    $update_sql = "UPDATE users SET 
+                  last_permohonan_id = LAST_INSERT_ID() 
+                  WHERE id = ?";
+    $update_stmt = $conn->prepare($update_sql);
+    $update_stmt->bind_param("i", $_SESSION['user_id']);
+    
+    if (!$update_stmt->execute()) {
+        throw new Exception("Gagal update data user: " . $update_stmt->error);
+    }
+
+    // Commit transaksi jika semua berhasil
+    $conn->commit();
+
+    // Redirect ke halaman berikutnya dengan dataid
+    unset($_SESSION['input_awal']); // Bersihkan session jika ada
+    header('Location: ../Frontend/input.php?dataid=' . urlencode($_SESSION['dataid']));
+    exit();
+
+} catch (Exception $e) {
+    // Rollback jika terjadi error
+    $conn->rollback();
+    
+    // Log error
+    error_log("Error pada proses_input_awal: " . $e->getMessage());
+    
+    // Redirect dengan pesan error
+    header('Location: ../Frontend/input_awal.php?error=' . urlencode($e->getMessage()));
+    exit();
+} finally {
+    // Tutup koneksi
+    if (isset($stmt)) $stmt->close();
+    if (isset($update_stmt)) $update_stmt->close();
+    $conn->close();
+}
 ?>

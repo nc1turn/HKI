@@ -1,21 +1,56 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Akses tidak diizinkan. Silakan login terlebih dahulu.']);
+    echo json_encode(['error' => 'Unauthorized']);
     exit();
 }
+
 include 'koneksi.php';
 
-if (isset($_POST['id'])) {
-    $id = $_POST['id'];
-    $user_id = $_SESSION['user_id'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = $_POST['id'] ?? '';
+    
+    if (empty($id)) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'ID tidak valid']);
+        exit();
+    }
 
-    $stmt = $conn->prepare("DELETE FROM detail_permohonan WHERE id=? AND user_id=?");
-    $stmt->bind_param("ii", $id, $user_id);
-    $stmt->execute();
+    // Check if user owns this permohonan
+    $checkSql = "SELECT id FROM detail_permohonan WHERE id = ? AND user_id = ?";
+    $checkStmt = $conn->prepare($checkSql);
+    $checkStmt->bind_param("ii", $id, $_SESSION['user_id']);
+    $checkStmt->execute();
+    $result = $checkStmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Data tidak ditemukan atau tidak memiliki akses']);
+        exit();
+    }
 
-    echo json_encode(['success' => true]);
+    // Delete related uploads first
+    $deleteUploadsSql = "DELETE FROM uploads WHERE dataid = (SELECT dataid FROM detail_permohonan WHERE id = ?)";
+    $deleteUploadsStmt = $conn->prepare($deleteUploadsSql);
+    $deleteUploadsStmt->bind_param("i", $id);
+    $deleteUploadsStmt->execute();
+
+    // Delete permohonan
+    $deleteSql = "DELETE FROM detail_permohonan WHERE id = ? AND user_id = ?";
+    $deleteStmt = $conn->prepare($deleteSql);
+    $deleteStmt->bind_param("ii", $id, $_SESSION['user_id']);
+    
+    if ($deleteStmt->execute()) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'message' => 'Data berhasil dihapus']);
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => 'Gagal menghapus data']);
+    }
+} else {
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Request tidak valid']);
 }
+?>

@@ -23,6 +23,7 @@ $nomer_telepon = $_POST['nomer_telepon'] ?? '';
 $fakultas = $_POST['fakultas'] ?? '';
 $role = $_POST['role'] ?? '';
 $email = $_POST['email'] ?? '';
+$dataid = $_POST['dataid'] ?? '';
 
 // Validasi input
 if (empty($nama) || empty($alamat) || empty($kode_pos) || empty($nomer_telepon) || empty($fakultas) || empty($role) || empty($email)) {
@@ -46,6 +47,6 @@ $_SESSION['data_pengusul'][] = [
 ];
 
 // Redirect kembali ke halaman input.php
-header('Location: input.php?dataid=' . urlencode($dataid) . '&success=Data berhasil ditambahkan');
+header('Location: ../Frontend/input.php?dataid=' . urlencode($dataid) . '&success=Data berhasil ditambahkan');
 exit();
 ?>

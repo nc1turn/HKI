@@ -1,7 +1,6 @@
 <?php
 session_start();
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../Frontend/login.php?m=nfound');
     exit();
@@ -12,50 +11,86 @@ $username = "root";
 $password = "";
 $dbname = "hki";
 
-// Koneksi ke database
+// Buat koneksi
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Koneksi gagal: " . $conn->connect_error);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['dataid'])) {
+    // MODIFIKASI: Berikan nilai default untuk setiap file yang tidak diupload
     $dataid = $_POST['dataid'];
+    $user_id = $_SESSION['user_id'];
+    $uploadDir = 'uploads/';
+    
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // MODIFIKASI: Inisialisasi semua nilai dengan string kosong sebagai default
     $uploads = [
-        'file_sp' => null,
-        'file_sph' => null,
-        'file_contoh_karya' => null,
-        'file_ktp' => null,
-        'file_bukti_pembayaran' => null
+        'file_sp' => '',
+        'file_sph' => '',
+        'file_contoh_karya' => '',
+        'file_ktp' => '',
+        'file_bukti_pembayaran' => ''
     ];
 
-    foreach ($uploads as $key => &$filePath) {
-        if (isset($_FILES[$key]) && $_FILES[$key]['error'] === 0) {
+    // MODIFIKASI: Proses upload hanya untuk file yang benar-benar diupload
+    foreach ($uploads as $key => &$value) {
+        if (isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK) {
             $ext = pathinfo($_FILES[$key]['name'], PATHINFO_EXTENSION);
-            $filePath = "uploads/{$key}_{$dataid}." . $ext;
-            move_uploaded_file($_FILES[$key]['tmp_name'], $filePath);
+            $newFileName = "{$key}_{$dataid}.{$ext}";
+            $filePath = $uploadDir . $newFileName;
+            
+            if (move_uploaded_file($_FILES[$key]['tmp_name'], $filePath)) {
+                $value = $filePath;
+            }
         }
     }
 
-    $sql = "INSERT INTO uploads (dataid, file_sp, file_sph, file_contoh_karya, file_ktp, file_bukti_pembayaran) 
-            VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param(
-        "ssssss",
-        $dataid,
-        $uploads['file_sp'],
-        $uploads['file_sph'],
-        $uploads['file_contoh_karya'],
-        $uploads['file_ktp'],
-        $uploads['file_bukti_pembayaran']
-    );
+    try {
+        // Update detail_permohonan dengan user_id
+        $updateStmt = $conn->prepare("UPDATE detail_permohonan SET user_id = ? WHERE dataid = ?");
+        $updateStmt->bind_param("is", $user_id, $dataid);
+        $updateStmt->execute();
+        
+        // MODIFIKASI: Gunakan prepared statement dengan nilai default dan user_id
+        $stmt = $conn->prepare("INSERT INTO uploads 
+                              (dataid, file_sp, file_sph, file_contoh_karya, file_ktp, file_bukti_pembayaran, user_id) 
+                              VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param(
+            "ssssssi",
+            $dataid,
+            $uploads['file_sp'],
+            $uploads['file_sph'],
+            $uploads['file_contoh_karya'],
+            $uploads['file_ktp'],
+            $uploads['file_bukti_pembayaran'],
+            $user_id
+        );
 
-    if ($stmt->execute()) {
-        header("Location: ../Frontend/daftar_user.php?status=success");
-    } else {
-        header("Location: ../Frontend/upload.php?status=error&msg=" . urlencode("Gagal menyimpan data ke database."));
+        if ($stmt->execute()) {
+            $conn->close();
+            header("Location: ../Frontend/daftar_user.php?status=success");
+            exit();
+        } else {
+            // MODIFIKASI: Tambahkan pesan error yang lebih informatif
+            $errorMsg = "Gagal menyimpan data: " . $stmt->error;
+            $conn->close();
+            header("Location: ../Frontend/upload.php?status=error&msg=" . urlencode($errorMsg));
+            exit();
+        }
+    } catch (Exception $e) {
+        // MODIFIKASI: Tambahkan rollback dan error handling
+        $conn->rollback();
+        $conn->close();
+        header("Location: ../Frontend/upload.php?status=error&msg=" . urlencode("Error: " . $e->getMessage()));
+        exit();
     }
-
-    $stmt->close();
+} else {
+    $conn->close();
+    header("Location: ../Frontend/upload.php?status=error&msg=" . urlencode("Request tidak valid"));
+    exit();
 }
-$conn->close();
 ?>

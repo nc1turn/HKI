@@ -1,8 +1,8 @@
 <?php
 $servername = "localhost";
-$username = "root"; // default XAMPP
-$password = "";     // default XAMPP
-$dbname = "hki"; // nama database kamu
+$username = "root";
+$password = "";
+$dbname = "hki"; 
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
